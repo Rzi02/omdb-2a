@@ -30,7 +30,7 @@ Route::get('/logout', [AuthController::class, 'logout'])->name('signout');
 // });
 
 Route::get('/Favorites', function () {
-    return view('controlpanel.My');
+    return view('controlpanel.fav');
 })->name('favorite');
 
 Route::prefix('/')->middleware('checkLogin')->group(function () {
