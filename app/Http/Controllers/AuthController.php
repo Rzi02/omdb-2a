@@ -16,54 +16,91 @@ class AuthController extends Controller
         $this->authService = $authService;
     }
 
-    // menampilkan halaman register
+    public function index()
+    {
+        return view('auth.login');
+    }
+
     public function register()
     {
         return view('auth.register');
     }
 
-    // menampilkan halaman login
-    public function login()
-    {
-        return view('auth.login');
-    }
-
-    // proses register
     public function register_process(Request $request)
     {
         $validated = $request->validate([
-            'name' => ['required'],
-            'email' => ['required', 'email', 'unique:users'],
-            'password' => [
-                'required',
-                'confirmed',
-                Password::min(8)
-                    ->letters()
-                    ->mixedCase()
-                    ->numbers()
-                    ->symbols(),
-            ]
+            'name'      => ['required'],
+            'email'     => ['required', 'email', 'unique:users'],
+            'password'  => ['required',
+                            'confirmed',
+                            Password::min(8)
+                                ->letters()
+                                ->mixedCase()
+                                ->numbers()
+                                ->symbols(),
+                            ]
         ]);
 
         try {
             $response = $this->authService->register($validated);
-
             if (!$response) {
                 return redirect()->back()->with('error', 'Registrasi gagal');
             }
 
-            return redirect()->route('login')
-                ->with('success', 'Registrasi berhasil');
-
+            return redirect()->route('login')->with('success', 'Registrasi berhasil');
         } catch (\Throwable $th) {
             Log::error([
-                'line' => $th->getLine(),
-                'file' => $th->getFile(),
-                'message' => $th->getMessage()
+                'line'      => $th->getLine(),
+                'file'      => $th->getFile(),
+                'message'   => $th->getMessage()
             ]);
 
-            return redirect()->back()
-                ->with('error', 'Registrasi gagal');
+            return redirect()->back()->with('error', 'Terjadi kesalahan');
+        }
+    }
+
+    public function login(Request $request)
+    {
+        $validated = $request->validate([
+            'email'     => ['required', 'email', 'exists:users'],
+            'password'  => ['required']
+        ],[
+            'email.required' => 'Email wajib diisi',
+            'email.email'    => 'Email tidak valid',
+            'email.exists'    => 'Email tidak terdaftar',
+            'password.required' => 'Password wajib diisi'
+        ]);
+
+        try {
+            $response = $this->authService->login($validated);
+
+            if (!$response) {
+                return redirect()->back()->with('error', 'Kredensial tidak valid!');
+            }
+            return redirect('/dashboard')->with('success', 'Login berhasil');
+        } catch (\Throwable $th) {
+            Log::error([
+                'line'      => $th->getLine(),
+                'file'      => $th->getFile(),
+                'message'   => $th->getMessage(),
+            ]);
+
+            return redirect()->back()->with('error', 'Terjadi kesalahan');
+        }
+    }
+    public function logout()
+    {
+        try{
+            session()->flush();
+            return redirect('/')->with('success','Anda Telah Keluar');
+        } catch (\Throwable $th) {
+            Log::error([
+                'line'      => $th->getLine(),
+                'file'      => $th->getFile(),
+                'message'   => $th->getMessage(),
+            ]);
+
+            return redirect()->back()->with('error', 'Terjadi kesalahan');
         }
     }
 }
